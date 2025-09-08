@@ -1,0 +1,259 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* Single light theme only (dark mode removed) */
+/* Set default font to sans-serif */
+:root {
+  font-family: var(--font-sans, sans-serif);
+  --background: oklch(99.029% 0.00532 198.238);
+  /* white base */
+  --foreground: oklch(99.405% 0.00011 271.152);
+  /* slate-800 */
+  --card: oklch(98.463% 0.00181 249.248 / 0.568);
+  /* slate-50 */
+  --card-foreground: oklch(35.04% 0.01007 216.95);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0% 0 0);
+  --primary: oklch(0.627 0.177 271.78);
+  --primary-foreground: oklch(0% 0 0);
+  --secondary: oklch(0.398 0.006 285.82);
+  --secondary-foreground: oklch(1 0 0);
+  --muted: oklch(0.961 0.006 247.86);
+  --muted-foreground: oklch(0.398 0.006 285.82);
+
+  --muted-foreground1: oklch(44.226% 0.00005 271.152);
+  
+  --accent: oklch(32.988% 0.05618 196.615);
+  --accent-foreground: oklch(0% 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(1 0 0);
+  --border: oklch(0.851 0.004 285.82);
+  --input: oklch(0.985 0.002 247.86);
+  --ring: oklch(0.627 0.177 271.78);
+
+  --chart-1: oklch(0.696 0.17 162.48);
+  --chart-2: oklch(0.577 0.245 27.325);
+  --chart-3: oklch(0.627 0.177 271.78);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.398 0.006 285.82);
+
+  --radius: 0.5rem;
+
+  --sidebar: oklch(0.985 0.002 247.86);
+  --sidebar-foreground: oklch(86.819% 0.1594 178.224);
+  --sidebar-primary: oklch(44.226% 0.00005 271.152);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.627 0.177 271.78);
+  --sidebar-accent-foreground: oklch(1 0 0);
+  --sidebar-border: oklch(0.851 0.004 285.82);
+  --sidebar-ring: oklch(0.627 0.177 271.78);
+}
+
+/* Tailwind theme tokens */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --font-heading: var(--font-sans, sans-serif);
+  --font-body: var(--font-sans, sans-serif);
+}
+
+/* Base layer (keeps your original body/text application) */
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+  font-family: var(--font-sans, sans-serif);
+    @apply bg-background text-foreground;
+  }
+}
+
+/* -------------------- */
+/*  Animated background */
+/* -------------------- */
+
+/* Show the canvas through the page when enabled on <body> */
+body.with-animated-bg {
+  background-color: transparent !important;
+}
+
+/* Make any full-screen bg utilities transparent when animation is on */
+body.with-animated-bg .bg-background {
+  background-color: transparent !important;
+}
+
+/* Ocean gradient under the canvas (used on the page wrapper) */
+/* .bg-ocean {
+  background:
+    radial-gradient(80% 60% at 50% 0%, oklch(0.72 0.14 220) 0%, transparent 60%),
+    radial-gradient(60% 50% at 80% 70%, oklch(0.64 0.12 210) 0%, transparent 55%),
+    linear-gradient(180deg, oklch(0.20 0.03 230), oklch(0.14 0.04 230));
+} */
+
+/* -------------------- */
+/*  Global glass effect */
+/* -------------------- */
+
+/* Make common surfaces translucent + blurred */
+body.glass-all :is(.bg-card, .bg-popover, .bg-secondary, .bg-muted, .bg-sidebar) {
+  background-color: color-mix(in oklch, var(--color-card) 22%, transparent) !important;
+  backdrop-filter: blur(16px) saturate(120%);
+  -webkit-backdrop-filter: blur(16px) saturate(120%);
+  border: 1px solid color-mix(in oklch, var(--color-border) 40%, transparent);
+  box-shadow:
+    0 1px 0 color-mix(in oklch, var(--color-foreground) 6%, transparent) inset,
+    0 10px 35px color-mix(in oklch, var(--color-foreground) 12%, transparent);
+}
+
+/* Slightly stronger on popovers */
+body.glass-all .bg-popover {
+  background-color: color-mix(in oklch, var(--color-popover) 28%, transparent) !important;
+}
+
+/* Navbars/sidebars even if they didn't use bg- classes */
+body.glass-all :is(.navbar, .sidebar, .app-header, nav, aside) {
+  background-color: color-mix(in oklch, var(--color-background) 20%, transparent) !important;
+  backdrop-filter: blur(18px) saturate(120%);
+  -webkit-backdrop-filter: blur(18px) saturate(120%);
+  border-bottom: 1px solid color-mix(in oklch, var(--color-border) 45%, transparent);
+}
+
+/* Gentle rounding for common cards */
+body.glass-all :is(.card, .rounded-lg, .rounded-xl) {
+  border-radius: var(--radius-xl, 0.75rem);
+}
+
+.backdrop-blur-2 {
+  backdrop-filter: blur(2px);
+}
+
+/* globals.css */
+:root {
+  /* keep these in sync with your Header/Sidebar actual sizes */
+  --header-h: 0rem;
+  /* h-16 */
+  --sidebar-w: 18rem;
+  /* w-72 */
+}
+
+/* Pads content so it starts below the fixed header and beside the fixed sidebar */
+.chrome-offset {
+  padding-top: var(--header-h);
+}
+
+@media (min-width: 1024px) {
+
+  /* lg breakpoint */
+  .chrome-offset {
+    padding-left: var(--sidebar-w);
+  }
+}
+
+
+
+/* globals.css (print helpers) */
+.print-a4 .page {
+  width: 210mm;
+  height: 297mm;
+  padding: 32px;
+  box-sizing: border-box;
+  page-break-after: always;
+  background: transparent;
+}
+
+.print-a4 .page:last-child {
+  page-break-after: auto;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+  }
+
+  .print-a4 {
+    padding: 0;
+  }
+
+  .print-a4 .page {
+    box-shadow: none !important;
+  }
+}
+
+
+
+/* Hide scrollbar, but keep scroll functionality */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  /* IE and old Edge */
+  scrollbar-width: none;
+  /* Firefox */
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+  /* Chrome, Safari, Opera */
+}
+
+/* Floating scrollbar for smoother UI */
+.floating-scrollbar {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #888 #f0f0f0;
+  position: relative;
+}
+.floating-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  background: #f0f0f0;
+  position: absolute;
+  right: 0;
+}
+.floating-scrollbar::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+.floating-scrollbar::-webkit-scrollbar-track {
+  background: #f0f0f0;
+}
