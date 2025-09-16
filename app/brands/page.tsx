@@ -9,14 +9,6 @@ import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
 import { List, LayoutGrid } from "lucide-react"
 export default function BrandsPage() {
-  // Client-side authentication check
-  if (typeof window !== "undefined") {
-    const isAuthenticated = localStorage.getItem("isAuthenticated") === "true";
-    if (!isAuthenticated) {
-      window.location.replace("/login");
-      return null;
-    }
-  }
   const router = useRouter()
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all")
   const [searchQuery, setSearchQuery] = useState("")
@@ -32,7 +24,9 @@ export default function BrandsPage() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch("/api/brands", { cache: "no-store", credentials: "include" });
+        const res = await fetch("/api/brands", {
+          cache: "no-store"
+        });
         if (res.status === 401) {
           router.replace("/login");
           return;

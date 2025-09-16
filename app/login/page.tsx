@@ -10,11 +10,11 @@ export default function Login() {
         const res = await fetch("/api/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            credentials: "include", // <-- important!
             body: JSON.stringify({ username, password }),
         });
         const data = await res.json();
-        if (data.ok) {
+        if (data.ok && data.token) {
+            sessionStorage.setItem("jwt", data.token);
             router.push("/dashboard");
         } else {
             alert("Invalid credentials");

@@ -8,7 +8,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Edit2, Trash2 } from "lucide-react"
 import Image from "next/image"
-import { EditProductDialog } from "@/components/products/edit-product-dialog"
+//import { EditProductDialog } from "@/components/products/edit-product-dialog"
 import { DeleteProductDialog } from "@/components/products/delete-product-dialog"
 import React from "react";
 
@@ -221,6 +221,12 @@ export default function ProductDetailsPage() {
     }
   }
 
+  const formatRs = (n?: number) =>
+    typeof n === "number"
+      ? `₹ ${new Intl.NumberFormat("en-IN", {
+        maximumFractionDigits: 0
+      }).format(n)}`
+      : "—";
   // Delete handler
   const handleConfirmDelete = async () => {
     if (!product) return
@@ -323,13 +329,7 @@ export default function ProductDetailsPage() {
             </Button>
           </div>
         </div>
-  
-      <EditProductDialog
-        product={product as any}
-        open={editing}
-        onOpenChange={setEditing}
-        onSave={(p) => handleSaveEdit(p as any)}
-      />
+        
       <DeleteProductDialog
         product={product as any}
         open={deleting}
@@ -352,7 +352,7 @@ export default function ProductDetailsPage() {
                     <span className="font-bold">Brand:</span> {product.brand || "—"}
                   </div>
                   <div className="grid gap-1">
-                    <span className="font-bold">Price:</span> {product.isPOR ? "POR" : product.price?.toLocaleString() || "—"}
+                    <span className="font-bold">Price:</span> {product.isPOR ? "POR" : formatRs(product.price)}
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">

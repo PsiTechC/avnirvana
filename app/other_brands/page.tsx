@@ -42,7 +42,7 @@ export default function OtherBrandsPage() {
       setIsLoading(true)
       setLoadError(null)
       try {
-        const res = await fetch("/api/other-brands", { cache: "no-store", credentials: "include" })
+        const res = await fetch("/api/other-brands", { cache: "no-store" })
         if (res.status === 401) {
           router.replace("/login")
           return

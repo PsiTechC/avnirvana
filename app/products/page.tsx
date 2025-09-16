@@ -11,14 +11,6 @@ import { Button } from "@/components/ui/button"
 import { Plus, Upload, List, LayoutGrid } from "lucide-react"
 
 export default function ProductsPage() {
-    // Client-side authentication check
-    if (typeof window !== "undefined") {
-      const isAuthenticated = localStorage.getItem("isAuthenticated") === "true";
-      if (!isAuthenticated) {
-        window.location.replace("/login");
-        return null;
-      }
-    }
   const [brandFilter, setBrandFilter] = useState<string>("all")
   const [categoryFilter, setCategoryFilter] = useState<string>("all")
   const [functionFilter, setFunctionFilter] = useState<string>("all")
@@ -37,7 +29,9 @@ export default function ProductsPage() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch("/api/products", { cache: "no-store", credentials: "include" });
+        const res = await fetch("/api/products", {
+          cache: "no-store"
+        });
         if (res.status === 401) {
           router.replace("/login");
           return;

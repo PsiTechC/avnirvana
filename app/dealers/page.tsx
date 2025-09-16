@@ -24,7 +24,9 @@ export default function DealersPage() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch("/api/dealers", { cache: "no-store", credentials: "include" });
+        const res = await fetch("/api/dealers", {
+          cache: "no-store"
+        });
         if (res.status === 401) {
           router.replace("/login");
           return;

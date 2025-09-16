@@ -74,7 +74,7 @@ export default function ProductCategoriesPage() {
             setIsLoading(true);
             setLoadError(null);
             try {
-                const res = await fetch("/api/product-categories", { cache: "no-store", credentials: "include" });
+                const res = await fetch("/api/product-categories", { cache: "no-store" });
                 if (res.status === 401) {
                     router.replace("/login");
                     return;

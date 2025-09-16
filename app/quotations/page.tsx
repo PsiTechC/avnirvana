@@ -36,7 +36,9 @@ export default function QuotationsPage() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch("/api/quotations", { cache: "no-store", credentials: "include" });
+        const res = await fetch("/api/quotations", {
+          cache: "no-store"
+        });
         if (res.status === 401) {
           router.replace("/login");
           return;

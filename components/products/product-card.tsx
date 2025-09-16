@@ -48,6 +48,13 @@ export function ProductCard({ product, onEdit, onDelete, onOpenDetails }: Produc
     if (Array.isArray(val)) return val.length > 0 ? val.join(", ") : "—"
     return val.trim() ? val : "—"
   }
+  const formatRs = (n?: number) =>
+    typeof n === "number"
+      ? `₹ ${new Intl.NumberFormat("en-IN", {
+        maximumFractionDigits: 0
+      }).format(n)}`
+      : "—";
+
 
   const router = useRouter();
   return (
@@ -127,7 +134,7 @@ export function ProductCard({ product, onEdit, onDelete, onOpenDetails }: Produc
           )}
         </div>
         <div className="text-sm font-semibold mb-1">
-          {product.isPOR ? "POR" : `Rs ${product.price.toFixed(2)}`}
+          {product.isPOR ? "POR" : formatRs(product.price)}
         </div>
         <div className="text-xs text-muted-foreground text-center">
           {getDisplay(product.categories)}

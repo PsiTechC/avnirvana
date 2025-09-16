@@ -1,3 +1,5 @@
+
+
 "use client"
 
 import type React from "react"
@@ -22,9 +24,6 @@ type ProductRow = {
     specification?: string
     gstPercent?: number
 }
-
-
-
 
 type BrandDetails = { _id: string; name: string; logoUrl?: string; websiteUrl?: string };
 type CompanyInfo = {
@@ -52,6 +51,8 @@ export default function ProductPriceListPage() {
     // --- Brand/Company Info for Export Header ---
     const [brandDetails, setBrandDetails] = useState<BrandDetails | null>(null);
     const [companyInfo, setCompanyInfo] = useState<CompanyInfo | null>(null);
+    const [effectiveDate, setEffectiveDate] = useState<string>("");
+
 
     // Helper to fetch brand/company info only when exporting
     async function fetchExportHeaderInfo(brandId: string) {
@@ -72,14 +73,20 @@ export default function ProductPriceListPage() {
         return { brand, company };
     }
 
+    const formatINR = (n?: number) =>
+        typeof n === "number" ? n.toLocaleString("en-IN") : "";
+
+    // ✅ New: “Rs ” prefix + Indian grouping
+    const formatRs = (n?: number) =>
+        typeof n === "number" ? `Rs ${n.toLocaleString("en-IN")}` : "";
+
     const handleExportExcel = async () => {
         // Fetch header info just-in-time
         const { brand, company } = await fetchExportHeaderInfo(selectedBrandId);
-        // Use xlsx-populate for image embedding
         // @ts-ignore
         const XPop = await import("xlsx-populate/browser/xlsx-populate-no-encryption");
         // Preload images as base64
-        const imagePromises = filtered.map(async (p) => {
+        const imagePromises = activeProducts.map(async (p) => {
             if (p.mainImage) {
                 try {
                     let url = p.mainImage;
@@ -102,15 +109,19 @@ export default function ProductPriceListPage() {
             return null;
         });
         const images = await Promise.all(imagePromises);
-        const rows = filtered.map((p, i) => [
+
+        // ✅ Use formatted string for MRP column
+        const rows = activeProducts.map((p, i) => [
             images[i],
             p.name,
             p.specification || "",
             typeof p.gstPercent === "number" ? p.gstPercent : "",
-            p.isPOR ? "POR" : typeof p.price === "number" ? p.price : ""
+            p.isPOR ? "POR" : formatRs(p.price)
         ]);
+
         const workbook = await XPop.default.fromBlankAsync();
         const sheet = workbook.sheet(0);
+
         // --- Custom Header: Brand Logo (left), Company Info (right) ---
         let headerRow = 1;
         let headerHeight = 40;
@@ -148,18 +159,18 @@ export default function ProductPriceListPage() {
                     company.website ? `Website: ${company.website}` : "",
                     company.gstin ? `GSTIN: ${company.gstin}` : "",
                 ].filter(Boolean).join("\n");
-                // Place in cell E1 (col 5)
                 sheet.cell(headerRow, 5).value(info).style({ bold: true, fontSize: 11 });
             }
-            // Merge header row for company info
             sheet.range(headerRow, 2, headerRow, 5).merged(true);
             sheet.row(headerRow).height(headerHeight);
         }
+
         // Set table headers below custom header
         const tableHeaderRow = headerRow + 1;
         ["Image", "Name", "Specification", "GST %", "MRP"].forEach((h, idx) => {
             sheet.cell(tableHeaderRow, idx + 1).value(h);
         });
+
         // Fill rows
         for (let i = 0; i < rows.length; i++) {
             const row = rows[i];
@@ -181,8 +192,10 @@ export default function ProductPriceListPage() {
                 sheet.cell(i + tableHeaderRow + 1, j + 1).value(j === 0 ? "" : row[j]);
             }
         }
+
         // Adjust column width for image
         sheet.column(1).width(8);
+
         // Download
         const blob = await workbook.outputAsync();
         const url = window.URL.createObjectURL(blob);
@@ -203,188 +216,296 @@ export default function ProductPriceListPage() {
         const jsPDF = (await import("jspdf")).default;
         // @ts-ignore
         const autoTable = (await import("jspdf-autotable")).default;
-        const doc = new jsPDF();
-        const tableColumn = ["Image", "Name", "Specification", "GST %", "MRP"];
-        // Preload images as base64
-        const imagePromises = filtered.map(async (p) => {
-            if (p.mainImage) {
-                try {
-                    let url = p.mainImage;
-                    if (url.startsWith("/")) {
-                        url = window.location.origin + url;
-                    }
-                    // Proxy image fetch to avoid CORS
-                    const proxied = `/api/proxy?url=${encodeURIComponent(url)}`;
-                    const res = await fetch(proxied);
-                    const blob = await res.blob();
-                    return await new Promise((resolve) => {
-                        const reader = new FileReader();
-                        reader.onloadend = () => resolve(reader.result);
-                        reader.readAsDataURL(blob);
-                    });
-                } catch {
-                    return null;
-                }
-            }
-            return null;
-        });
-        const images = await Promise.all(imagePromises);
-        const tableRows = filtered.map((p, i) => [
-            images[i] && typeof images[i] === 'string' && images[i].startsWith('data:image') ? { image: images[i] } : '',
-            p.name,
-            p.specification || "",
-            typeof p.gstPercent === "number" ? p.gstPercent : "",
-            p.isPOR ? "POR" : typeof p.price === "number" ? p.price : ""
-        ]);
-        // --- Custom Header: Brand Logo (left), Company Info (right) ---
-    let headerHeight = 28;
-    let headerY = 4; // Reduced from 10 to 4 for less top padding
-    let logoWidth = 32;
-    let logoHeight = 28;
-    let margin = 10;
-    const pageWidth = doc.internal.pageSize.getWidth();
-        // Draw brand logo (left)
-        if (brand?.logoUrl) {
-            try {
-                let logoUrl = brand.logoUrl;
-                if (logoUrl.startsWith("/")) logoUrl = window.location.origin + logoUrl;
-                const proxied = `/api/proxy?url=${encodeURIComponent(logoUrl)}`;
-                const res = await fetch(proxied);
-                const blob = await res.blob();
-                const base64 = await new Promise((resolve) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => resolve(reader.result?.toString() || "");
-                    reader.readAsDataURL(blob);
-                });
-                if (typeof base64 === 'string' && base64.startsWith('data:image')) {
-                    try {
-                        doc.addImage(base64, 'PNG', margin, headerY, logoWidth, logoHeight);
-                    } catch {
-                        try { doc.addImage(base64, 'JPEG', margin, headerY, logoWidth, logoHeight); } catch { }
-                    }
-                }
-            } catch { }
+
+        const doc = new jsPDF({ orientation: "landscape" });
+
+        // ---------- Layout constants ----------
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const thinMargin = 8;
+        const headerY = 6;
+        const brandLogoW = 32, brandLogoH = 24;
+        const avLogoW = 50, avLogoH = 16;
+        const headerBlockH = Math.max(brandLogoH, avLogoH) + 12;
+        const footerH = 8;
+
+        // Image cell box + min row height (prevents overlap on empty rows)
+        const IMG_PAD = 2;
+        const IMG_BOX_H = 42;
+        const MIN_ROW_H = IMG_BOX_H + IMG_PAD * 2;
+
+        // const effectiveStr = new Date().toLocaleDateString("en-GB");
+        const effectiveStr = effectiveDate
+            ? new Date(effectiveDate).toLocaleDateString("en-GB")
+            : new Date().toLocaleDateString("en-GB"); // fallback to today if not set
+
+
+        // ---------- helper for base64 ----------
+        async function toB64(u: string) {
+            const res = await fetch(`/api/proxy?url=${encodeURIComponent(u)}`);
+            const blob = await res.blob();
+            return await new Promise<string>((resolve) => {
+                const r = new FileReader();
+                r.onloadend = () => resolve((r.result as string) || "");
+                r.readAsDataURL(blob);
+            });
         }
-        // Draw company info (right, fully right-aligned, not overlapping logo)
-        // Add AV Nirvana logo above company info
-        if (company) {
-            const infoLines = [
-                company.address + ", " + company.city + ", " + company.state + " " + company.zipCode,
+
+        // ---------- preload logos ----------
+        let brandLogoB64: string | null = null;
+        if (brand?.logoUrl) {
+            let u = brand.logoUrl;
+            if (u.startsWith("/")) u = window.location.origin + u;
+            try { brandLogoB64 = await toB64(u); } catch { }
+        }
+        let avLogoB64: string | null = null;
+        try {
+            let u = "/avLogo.png";
+            if (u.startsWith("/")) u = window.location.origin + u;
+            avLogoB64 = await toB64(u);
+        } catch { }
+
+        // ---------- company info lines ----------
+        const infoLines = company
+            ? [
+                `${company.address}, ${company.city}, ${company.state} ${company.zipCode}`,
                 company.country,
                 `Phone: ${company.phone}  Email: ${company.email}`,
                 company.website ? `Website: ${company.website}` : "",
                 company.gstin ? `GSTIN: ${company.gstin}` : "",
-            ].filter(Boolean);
-            doc.setFontSize(8);
-            doc.setFont('sans', 'normal');
-            // Calculate right margin for company info
-            const rightX = pageWidth - margin;
-            // --- AV Nirvana logo (above company info, right-aligned) ---
-            const avNirvanaLogoUrl = '/avLogo.png';
-            try {
-                let logoUrl = avNirvanaLogoUrl;
-                if (logoUrl.startsWith("/")) logoUrl = window.location.origin + logoUrl;
-                const proxied = `/api/proxy?url=${encodeURIComponent(logoUrl)}`;
-                const res = await fetch(proxied);
-                const blob = await res.blob();
-                const base64 = await new Promise((resolve) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => resolve(reader.result?.toString() || "");
-                    reader.readAsDataURL(blob);
-                });
-                if (typeof base64 === 'string' && base64.startsWith('data:image')) {
-                    
-                    const logoW = 50;
-                    const logoH = 16;
-                    const logoX = pageWidth - margin - logoW;
-                    const logoY = headerY;
-                    try {
-                        doc.addImage(base64, 'PNG', logoX, logoY, logoW, logoH);
-                    } catch {
-                        try { doc.addImage(base64, 'JPEG', logoX, logoY, logoW, logoH); } catch { }
-                    }
-                }
-            } catch { }
-            // --- Company info below AV Nirvana logo ---
-            // Further decrease line height for more compact info
-            let lineHeight = 2.5;
-            // Start Y below logo (logoY + logoH + 2)
-            let startY = headerY + 16 + 2;
-            infoLines.forEach((line, idx) => {
-                doc.text(line, rightX, startY + idx * lineHeight, { align: 'right' });
-            });
-        }
-        // Table below header
-    // Center the table horizontally on the page
-    // Calculate total table width (sum of column widths)
-    const colWidths = [24, 50, 70, 20, 30];
-    const tableWidth = colWidths.reduce((a, b) => a + b, 0);
-    const tableMargin = (pageWidth - tableWidth) / 2;
+            ].filter(Boolean)
+            : [];
+
+        // ---------- preload product images ----------
+        const productImages = await Promise.all(
+            activeProducts.map(async (p) => {
+                if (!p.mainImage) return null;
+                try {
+                    let url = p.mainImage;
+                    if (url.startsWith("/")) url = window.location.origin + url;
+                    return await toB64(url);
+                } catch { return null; }
+            })
+        );
+
+        // ✅ Use formatted string for MRP column
+        const rows = activeProducts.map((p, i) => [
+            i+1,
+            "", // image cell content left empty
+             `${p.name}\n${p.specification || ""}`, // Name + Spec in one cell
+
+            // {
+            //     content: `${p.name}\n${p.specification || ""}`,
+            //     styles: { fontSize: 9, halign: "left", valign: "middle" }
+            // },
+            typeof p.gstPercent === "number" ? p.gstPercent : "",
+            p.isPOR ? "POR" : formatRs(p.price)
+        ]);
+
+        // ---------- columns (image | name | spec | gst | mrp) ----------
+        const availableWidth = pageWidth - 2 * thinMargin;
+        // const base = [50, 80, 90, 24, 30];
+        const base = [20, 60, 90, 24, 32]; 
+        const sum = base.reduce((a, b) => a + b, 0);
+        const scale = availableWidth / sum;
+        const colWidths = base.map(w => w * scale);
+
+        // ---------- title rows ----------
+        const titleRow = [{ content: "Price List", colSpan: 5, styles: { halign: "center", fontStyle: "bold", fontSize: 14, textColor: [30, 144, 255] } }];
+        const subtitleRow = [{
+            content: `[Effective ${effectiveStr}. This pricelist supersedes all previous pricelists.]`,
+            colSpan: 5,
+            styles: { halign: "center", fontSize: 10, textColor: [204, 0, 0] }
+        }];
+
         autoTable(doc, {
-            head: [tableColumn],
-            body: tableRows as any[][],
-            startY: headerY + headerHeight + 2,
-            theme: 'grid',
-            margin: { left: tableMargin, right: tableMargin },
+            head: [
+                titleRow as any,
+                subtitleRow as any,
+                ["Sr. No.", "Image", "Name & Specification", "GST %", "MRP"]
+            ],
+            body: rows as any[][],
+            margin: { top: headerY + headerBlockH + 2, bottom: footerH + 4, left: thinMargin, right: thinMargin },
+            theme: "grid",
+
             headStyles: {
-                fillColor: [36, 97, 171],
-                textColor: 255,
-                fontStyle: 'bold',
-                halign: 'center',
-                valign: 'middle',
+                fillColor: [200, 200, 200],
+                textColor: 0,
+                fontStyle: "bold",
+                halign: "center",
+                valign: "middle",
                 fontSize: 11,
                 cellPadding: 4,
+                lineWidth: 0.5,
+                lineColor: [0, 0, 0], // black borders
             },
             styles: {
                 fontSize: 10,
                 cellPadding: 4,
-                halign: 'left',
-                valign: 'middle',
-                overflow: 'linebreak',
+                halign: "left",
+                valign: "middle",
+                overflow: "linebreak",
+                lineWidth: 0.5,
+                lineColor: [0, 0, 0], // black borders
             },
+            bodyStyles: {
+                minCellHeight: MIN_ROW_H,
+            },
+            rowPageBreak: "avoid",
+
             columnStyles: {
-                0: { cellWidth: 24, halign: 'center', valign: 'middle' },
-                1: { cellWidth: 50 },
-                2: { cellWidth: 70 },
-                3: { cellWidth: 20, halign: 'center' },
-                4: { cellWidth: 30, halign: 'center' },
+                0: { cellWidth: colWidths[0], halign: "center" }, 
+                1: { cellWidth: colWidths[1], halign: "center", valign: "middle" }, // Image                                    // Name (slightly narrower)
+                2: { cellWidth: colWidths[2], fontSize: 9 },                         // Name Specification smaller font  ← CHANGED
+                3: { cellWidth: colWidths[3], halign: "center" },                    // GST
+                4: { cellWidth: colWidths[4], halign: "center" },                    // MRP wider so it won't wrap  ← CHANGED
             },
-            didDrawCell: function (data) {
-                if (
-                    data.column.index === 0 &&
-                    data.cell.section === 'body' &&
-                    typeof data.row.index === 'number'
-                ) {
-                    const rowRaw = data.row.raw as any[];
-                    const imgObj = rowRaw && rowRaw[0];
-                    const img = imgObj && typeof imgObj === 'object' && imgObj.image ? imgObj.image : null;
-                    if (img && typeof img === 'string' && img.startsWith('data:image')) {
-                        const cellWidth = data.cell.width;
-                        const cellHeight = data.cell.height;
-                        const imgSize = 20;
-                        // Center image in cell
-                        const x = data.cell.x + (cellWidth - imgSize) / 2;
-                        const y = data.cell.y + (cellHeight - imgSize) / 2;
-                        try {
-                            doc.addImage(img, 'JPEG', x, y, imgSize, imgSize);
-                        } catch (e) {
-                            try {
-                                doc.addImage(img, 'PNG', x, y, imgSize, imgSize);
-                            } catch { }
-                        }
-                    }
+
+            // // 👇 NEW HOOK
+            // didParseCell: (data) => {
+            //     // "Name & Specification" column (SrNo=0, Image=1, Name&Spec=2, GST=3, MRP=4)
+            //     if (data.section !== "body" || data.column.index !== 2) return;
+
+            //     // Normalize to plain string lines
+            //     const asPlain = (ln: any): string =>
+            //         Array.isArray(ln)
+            //             ? ln.map(seg => (typeof seg === "string" ? seg : (seg?.content ?? ""))).join("")
+            //             : String(ln ?? "");
+
+            //     const rawLines = Array.isArray(data.cell.text) ? data.cell.text : [data.cell.text];
+            //     const lines = rawLines.map(asPlain);
+
+            //     const name = (lines[0] ?? "").trim();
+            //     const spec = (lines.slice(1).join(" ") || "").trim();
+
+            //     // Rebuild as styled, multi-line content (array of arrays)
+            //     data.cell.text = [
+            //         [
+            //             { content: name, styles: { fontStyle: "bold", textColor: [30, 144, 255] } } // sky blue, bold
+            //         ],
+            //         ...(spec
+            //             ? [[{ content: spec, styles: { fontStyle: "normal", textColor: [0, 0, 0] } }]] // black
+            //             : [])
+            //     ] as any; // cast to any to satisfy TS typing
+            // },
+
+
+            // didDrawPage: (data) => {
+            //     if (brandLogoB64) {
+            //         try { doc.addImage(brandLogoB64, "PNG", thinMargin, headerY, brandLogoW, brandLogoH); } catch { }
+            //     }
+            //     const INFO_BLOCK_W = 100;
+            //     const infoLeftX = pageWidth - thinMargin - INFO_BLOCK_W;
+            //     if (avLogoB64) {
+            //         try { doc.addImage(avLogoB64, "PNG", infoLeftX, headerY, avLogoW, avLogoH); } catch { }
+            //     }
+            //     if (infoLines.length) {
+            //         doc.setFontSize(8);
+            //         doc.setFont("sans", "normal");
+            //         const startY = headerY + avLogoH + 4;
+            //         infoLines.forEach((line, idx) => {
+            //             const y = startY + idx * 3.2;
+            //             doc.text(line || "", infoLeftX, y, { align: "left" });
+            //         });
+            //     }
+            //     doc.setFontSize(9);
+            //     const footerY = pageHeight - thinMargin;
+            //     doc.text(`Page ${data.pageNumber}`, pageWidth - thinMargin, footerY, { align: "right" });
+            // },
+
+
+            didDrawPage: (data) => {
+                // --- Brand logo ---
+                if (brandLogoB64) {
+                    try {
+                        doc.addImage(brandLogoB64, "PNG", thinMargin, headerY, brandLogoW, brandLogoH);
+                    } catch { }
                 }
-                // else: leave cell blank
+
+                // --- AV logo + company info ---
+                const INFO_BLOCK_W = 100;
+                const infoLeftX = pageWidth - thinMargin - INFO_BLOCK_W;
+                if (avLogoB64) {
+                    try {
+                        doc.addImage(avLogoB64, "PNG", infoLeftX, headerY, avLogoW, avLogoH);
+                    } catch { }
+                }
+                if (infoLines.length) {
+                    doc.setFontSize(8);
+                    doc.setFont("sans", "normal");
+                    const startY = headerY + avLogoH + 4;
+                    infoLines.forEach((line, idx) => {
+                        const y = startY + idx * 3.2;
+                        doc.text(line || "", infoLeftX, y, { align: "left" });
+                    });
+                }
+
+                // --- Footer area ---
+                const footerHeight = 12;
+                const footerTop = pageHeight - footerHeight; // make sure it's inside the page
+
+                // light grey background strip
+                doc.setFillColor(200, 200, 200);
+                doc.rect(0, footerTop, pageWidth, footerHeight, "F");
+
+                // Effective date disclaimer (center)
+                doc.setFontSize(9);
+                doc.setFont("helvetica", "bold");
+                doc.setTextColor(204, 0, 0);
+                doc.text(
+                    `[Effective ${effectiveStr}. This pricelist supersedes all previous pricelists.]`,
+                    pageWidth / 2,
+                    footerTop + footerHeight / 2 + 2, // vertically centered
+                    { align: "center" }
+                );
+
+                // Page number (right)
+                doc.setFont("helvetica", "bold");
+                doc.setTextColor(0, 0, 0);
+                doc.text(`Page ${data.pageNumber}`, pageWidth - thinMargin, footerTop + footerHeight / 2 + 2, {
+                    align: "right",
+                });
             },
-            rowPageBreak: 'avoid',
-            didParseCell: function (data) {
-                if (data.section === 'body') {
-                    data.cell.height = 24;
+
+
+            // didParseCell: (data) => {
+            //     if (data.section === "body" && data.column.index === 2) {
+            //         const raw = String(data.cell.raw || "");
+            //         const [name, ...rest] = raw.split("\n");
+            //         const spec = rest.join(" ").trim();
+
+            //         // Plain strings only
+            //         data.cell.text = [(name || "").trim(), spec] as any;
+            //     }
+            // },
+
+            didDrawCell: (cell) => {
+                if (cell.section === "body" && cell.column.index === 1) {
+                    const img = productImages[cell.row.index];
+                    if (!img) return;
+
+                    const cw = cell.cell.width;
+                    const ch = cell.cell.height;
+
+                    const boxW = cw - 2 * IMG_PAD;
+                    const boxH = IMG_BOX_H;
+
+                    const maxDrawableH = Math.max(0, ch - 2 * IMG_PAD);
+                    const drawH = Math.min(boxH, maxDrawableH);
+                    const drawW = boxW;
+
+                    const x = cell.cell.x + (cw - drawW) / 2;
+                    const y = cell.cell.y + (ch - drawH) / 2;
+
+                    try { doc.addImage(img, "JPEG", x, y, drawW, drawH); }
+                    catch { try { doc.addImage(img, "PNG", x, y, drawW, drawH); } catch { } }
                 }
             },
         });
+
         doc.save("price-list.pdf");
     };
+
     const [brands, setBrands] = useState<BrandOpt[]>([])
     const [brandLoading, setBrandLoading] = useState(false)
     const [brandError, setBrandError] = useState<string | null>(null)
@@ -458,9 +579,14 @@ export default function ProductPriceListPage() {
         if (!query) return products
         return products.filter(p =>
             p.name.toLowerCase().includes(query)
-            // (p.sku || "").toLowerCase().includes(query)
         )
     }, [products, q])
+
+    // ✅ Only active products
+    const activeProducts = useMemo(() => {
+        return filtered.filter((p) => p.status === "active");
+    }, [filtered]);
+
 
     return (
         <DashboardLayout>
@@ -516,7 +642,7 @@ export default function ProductPriceListPage() {
                             <List className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{products.length}</div>
+                            <div className="text-2xl font-bold">{activeProducts.length}</div>
                             <p className="text-xs text-muted-foreground">
                                 {selectedBrandId ? "For selected brand" : "Select a brand to view"}
                             </p>
@@ -531,7 +657,17 @@ export default function ProductPriceListPage() {
                     <Button className="bg-[oklch(32.988%_0.05618_196.615)]/80" onClick={handleExportPDF} disabled={filtered.length === 0} title="Export as PDF">
                         <FileDown className="mr-2 h-4 w-4" /> Export PDF
                     </Button>
+
+                    {/* New Date input */}
+                    <input
+                        type="date"
+                        className="border rounded px-2 py-1 text-sm"
+                        value={effectiveDate}
+                        onChange={(e) => setEffectiveDate(e.target.value)}
+                    />
+                
                 </div>
+
                 <Card className="border-border">
                     <CardHeader>
                         <CardTitle className="font-bold ">Price List</CardTitle>
@@ -540,15 +676,6 @@ export default function ProductPriceListPage() {
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        {/* <div className="flex items-center gap-2">
-                            <Input
-                                value={q}
-                                onChange={(e) => setQ(e.target.value)}
-                                placeholder="Search by name or SKU…"
-                                className="max-w-sm"
-                            />
-                        </div> */}
-
                         {productError && <div className="text-sm text-red-500">{productError}</div>}
 
                         {loadingProducts ? (
@@ -562,22 +689,20 @@ export default function ProductPriceListPage() {
                                 <table className="w-full text-sm">
                                     <thead className="bg-muted/50">
                                         <tr className="text-left">
+                                            <th className="px-3 py-2 font-bold">Sr. No.</th>
                                             <th className="px-3 py-2 font-bold">Name</th>
-                                            {/* <th className="px-3 py-2 font-medium">SKU</th> */}
                                             <th className="px-3 py-2 font-bold">Price</th>
-                                            {/* <th className="px-3 py-2 font-medium">Stock</th> */}
                                             <th className="px-3 py-2 font-bold">Status</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {filtered.map((p) => (
+                                            {activeProducts.map((p,index) => (
                                             <tr key={p._id} className="border-t">
+                                                    <td className="px-3 py-2">{index + 1}</td>
                                                 <td className="px-3 py-2">{p.name}</td>
-                                                {/* <td className="px-3 py-2">{p.sku || "—"}</td> */}
                                                 <td className="px-3 py-2">
-                                                    {p.isPOR ? "POR" : typeof p.price === "number" ? `Rs ${p.price.toFixed(2)}` : "—"}
+                                                        {p.isPOR ? "POR" : typeof p.price === "number" ? `₹ ${formatINR(p.price)}` : "—"}
                                                 </td>
-                                                {/* <td className="px-3 py-2">{typeof p.stockLevel === "number" ? p.stockLevel : "—"}</td> */}
                                                 <td className="px-3 py-2 capitalize">{p.status || "—"}</td>
                                             </tr>
                                         ))}

@@ -41,6 +41,7 @@ export interface Product {
   updatedAt?: Date;
   gstPercent?: number; // GST %
   isNewProduct?: boolean; // Is New Product toggle
+  isPOR?: boolean; // Price on Request
 }
 
 const ProductSchema = new Schema<Product>(
@@ -53,6 +54,7 @@ const ProductSchema = new Schema<Product>(
     functionIds: [{ type: Schema.Types.ObjectId, ref: "ProductFunction" }],
     price: { type: Number },
   // sku: { type: String, trim: true },
+    isPOR: { type: Boolean, default: false },
     status: { type: String, enum: ["active", "inactive"], default: "active" },
     images: [{ type: String, default: [] }], // Array of image URLs
     mainImage: { type: String, default: "" }, // Main image URL

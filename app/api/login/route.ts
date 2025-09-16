@@ -13,16 +13,8 @@ export async function POST(req: NextRequest) {
   if (username === USER.username && password === USER.password) {
     // Issue JWT
     const token = jwt.sign({ username }, JWT_SECRET, { expiresIn: "1d" });
-    // Set cookie
-    return NextResponse.json(
-      { ok: true },
-      {
-        status: 200,
-        headers: {
-          "Set-Cookie": `token=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=86400`,
-        },
-      }
-    );
+    // Return token in response body
+    return NextResponse.json({ ok: true, token }, { status: 200 });
   }
   return NextResponse.json({ ok: false, error: "Invalid credentials" }, { status: 401 });
 }
