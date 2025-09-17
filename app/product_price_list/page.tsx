@@ -292,19 +292,13 @@ export default function ProductPriceListPage() {
         const rows = activeProducts.map((p, i) => [
             i+1,
             "", // image cell content left empty
-             `${p.name}\n${p.specification || ""}`, // Name + Spec in one cell
-
-            // {
-            //     content: `${p.name}\n${p.specification || ""}`,
-            //     styles: { fontSize: 9, halign: "left", valign: "middle" }
-            // },
+            `${p.name}\n${p.specification || ""}`, // Name + Spec in one cell
             typeof p.gstPercent === "number" ? p.gstPercent : "",
             p.isPOR ? "POR" : formatRs(p.price)
         ]);
 
         // ---------- columns (image | name | spec | gst | mrp) ----------
         const availableWidth = pageWidth - 2 * thinMargin;
-        // const base = [50, 80, 90, 24, 30];
         const base = [20, 60, 90, 24, 32]; 
         const sum = base.reduce((a, b) => a + b, 0);
         const scale = availableWidth / sum;
@@ -317,6 +311,165 @@ export default function ProductPriceListPage() {
             colSpan: 5,
             styles: { halign: "center", fontSize: 10, textColor: [204, 0, 0] }
         }];
+
+        // autoTable(doc, {
+        //     head: [
+        //         titleRow as any,
+        //         subtitleRow as any,
+        //         ["Sr. No.", "Image", "Name & Specification", "GST %", "MRP"]
+        //     ],
+        //     body: rows as any[][],
+        //     margin: { top: headerY + headerBlockH + 2, bottom: footerH + 4, left: thinMargin, right: thinMargin },
+        //     theme: "grid",
+
+        //     headStyles: {
+        //         fillColor: [200, 200, 200],
+        //         textColor: 0,
+        //         fontStyle: "bold",
+        //         halign: "center",
+        //         valign: "middle",
+        //         fontSize: 11,
+        //         cellPadding: 4,
+        //         lineWidth: 0.5,
+        //         lineColor: [0, 0, 0], // black borders
+        //     },
+        //     styles: {
+        //         fontSize: 10,
+        //         cellPadding: 4,
+        //         halign: "left",
+        //         valign: "middle",
+        //         overflow: "linebreak",
+        //         lineWidth: 0.5,
+        //         lineColor: [0, 0, 0], // black borders
+        //     },
+        //     bodyStyles: {
+        //         minCellHeight: MIN_ROW_H,
+        //     },
+        //     rowPageBreak: "avoid",
+
+        //     columnStyles: {
+        //         0: { cellWidth: colWidths[0], halign: "center" }, 
+        //         1: { cellWidth: colWidths[1], halign: "center", valign: "middle" }, // Image                                    // Name (slightly narrower)
+        //         2: { cellWidth: colWidths[2], fontSize: 9 },                         // Name Specification smaller font  ← CHANGED
+        //         3: { cellWidth: colWidths[3], halign: "center" },                    // GST
+        //         4: { cellWidth: colWidths[4], halign: "center" },                    // MRP wider so it won't wrap  ← CHANGED
+        //     },
+
+        //     didDrawPage: (data) => {
+        //         // --- Brand logo ---
+        //         if (brandLogoB64) {
+        //             try {
+        //                 doc.addImage(brandLogoB64, "PNG", thinMargin, headerY, brandLogoW, brandLogoH);
+        //             } catch { }
+        //         }
+
+        //         // --- AV logo + company info ---
+        //         const INFO_BLOCK_W = 110;
+        //         const infoLeftX = pageWidth - thinMargin - INFO_BLOCK_W;
+        //         if (avLogoB64) {
+        //             try {
+        //                 doc.addImage(avLogoB64, "PNG", infoLeftX, headerY, avLogoW, avLogoH);
+        //             } catch { }
+        //         }
+
+        //         if (infoLines.length) {
+        //             doc.setFontSize(8);
+        //             doc.setFont("sans", "normal");
+
+        //             const startY = headerY + avLogoH + 4;
+        //             let cursorY = startY;
+
+        //             infoLines.forEach((line, idx) => {
+        //                 let y = cursorY + idx * 4;
+
+        //                 // Detect email
+        //                 if (line.includes("Email:")) {
+        //                     const parts = line.split("Email:");
+        //                     const leftPart = parts[0].trim();
+        //                     const email = parts[1]?.trim();
+
+        //                     // Print left part normally
+        //                     if (leftPart) {
+        //                         doc.setTextColor(0, 0, 0);
+        //                         doc.text(leftPart, infoLeftX, y, { align: "left" });
+        //                     }
+
+        //                     // Print email in blue + add link
+        //                     if (email) {
+        //                         const emailX = doc.getTextWidth(leftPart + " ") + infoLeftX;
+        //                         doc.setTextColor(0, 0, 255);
+        //                         doc.text(`Email: ${email}`, emailX, y, { align: "left" });
+        //                         doc.link(emailX, y - 3, doc.getTextWidth(email), 6, { url: `mailto:${email}` });
+        //                     }
+        //                 }
+        //                 // Detect website
+        //                 else if (line.startsWith("Website:")) {
+        //                     const website = line.replace("Website:", "").trim();
+        //                     doc.setTextColor(0, 0, 255);
+        //                     doc.text(`Website: ${website}`, infoLeftX, y, { align: "left" });
+        //                     doc.link(infoLeftX + doc.getTextWidth("Website: "), y - 3, doc.getTextWidth(website), 6, {
+        //                         url: website.startsWith("http") ? website : `https://${website}`,
+        //                     });
+        //                 }
+        //                 // Default (normal black text)
+        //                 else {
+        //                     doc.setTextColor(0, 0, 0);
+        //                     doc.text(line, infoLeftX, y, { align: "left" });
+        //                 }
+        //             });
+        //         }
+
+        //         // --- Footer stays as is ---
+        //         const footerHeight = 12;
+        //         const footerTop = pageHeight - footerHeight;
+        //         doc.setFillColor(200, 200, 200);
+        //         doc.rect(0, footerTop, pageWidth, footerHeight, "F");
+
+        //         doc.setFontSize(9);
+        //         doc.setFont("helvetica", "bold");
+        //         doc.setTextColor(204, 0, 0);
+        //         doc.text(
+        //             `[Effective ${effectiveStr}. This pricelist supersedes all previous pricelists.]`,
+        //             pageWidth / 2,
+        //             footerTop + footerHeight / 2 + 2,
+        //             { align: "center" }
+        //         );
+
+        //         doc.setFont("helvetica", "bold");
+        //         doc.setTextColor(0, 0, 0);
+        //         doc.text(`Page ${data.pageNumber}`, pageWidth - thinMargin, footerTop + footerHeight / 2 + 2, {
+        //             align: "right",
+        //         });
+        //     },
+
+
+
+            // //////////////Original image handler//////////////
+            // didDrawCell: (cell) => {
+            //     if (cell.section === "body" && cell.column.index === 1) {
+            //         const img = productImages[cell.row.index];
+            //         if (!img) return;
+
+            //         const cw = cell.cell.width;
+            //         const ch = cell.cell.height;
+
+            //         const boxW = cw - 2 * IMG_PAD;
+            //         const boxH = IMG_BOX_H;
+
+            //         const maxDrawableH = Math.max(0, ch - 2 * IMG_PAD);
+            //         const drawH = Math.min(boxH, maxDrawableH);
+            //         const drawW = boxW;
+
+            //         const x = cell.cell.x + (cw - drawW) / 2;
+            //         const y = cell.cell.y + (ch - drawH) / 2;
+
+            //         try { doc.addImage(img, "JPEG", x, y, drawW, drawH); }
+            //         catch { try { doc.addImage(img, "PNG", x, y, drawW, drawH); } catch { } }
+            //     }
+            // },
+        // });
+
+
 
         autoTable(doc, {
             head: [
@@ -337,7 +490,7 @@ export default function ProductPriceListPage() {
                 fontSize: 11,
                 cellPadding: 4,
                 lineWidth: 0.5,
-                lineColor: [0, 0, 0], // black borders
+                lineColor: [0, 0, 0],
             },
             styles: {
                 fontSize: 10,
@@ -346,7 +499,7 @@ export default function ProductPriceListPage() {
                 valign: "middle",
                 overflow: "linebreak",
                 lineWidth: 0.5,
-                lineColor: [0, 0, 0], // black borders
+                lineColor: [0, 0, 0],
             },
             bodyStyles: {
                 minCellHeight: MIN_ROW_H,
@@ -354,154 +507,330 @@ export default function ProductPriceListPage() {
             rowPageBreak: "avoid",
 
             columnStyles: {
-                0: { cellWidth: colWidths[0], halign: "center" }, 
-                1: { cellWidth: colWidths[1], halign: "center", valign: "middle" }, // Image                                    // Name (slightly narrower)
-                2: { cellWidth: colWidths[2], fontSize: 9 },                         // Name Specification smaller font  ← CHANGED
-                3: { cellWidth: colWidths[3], halign: "center" },                    // GST
-                4: { cellWidth: colWidths[4], halign: "center" },                    // MRP wider so it won't wrap  ← CHANGED
+                0: { cellWidth: colWidths[0], halign: "center" },
+                1: { cellWidth: colWidths[1], halign: "center", valign: "middle" },
+                2: { cellWidth: colWidths[2], fontSize: 9 },
+                3: { cellWidth: colWidths[3], halign: "center" },
+                4: { cellWidth: colWidths[4], halign: "center" },
             },
 
-            // // 👇 NEW HOOK
-            // didParseCell: (data) => {
-            //     // "Name & Specification" column (SrNo=0, Image=1, Name&Spec=2, GST=3, MRP=4)
-            //     if (data.section !== "body" || data.column.index !== 2) return;
+                didDrawPage: (data) => {
+                    // --- Brand logo ---
+                    if (brandLogoB64) {
+                        try {
+                            doc.addImage(brandLogoB64, "PNG", thinMargin, headerY, brandLogoW, brandLogoH);
+                        } catch { }
+                    }
 
-            //     // Normalize to plain string lines
-            //     const asPlain = (ln: any): string =>
-            //         Array.isArray(ln)
-            //             ? ln.map(seg => (typeof seg === "string" ? seg : (seg?.content ?? ""))).join("")
-            //             : String(ln ?? "");
+                    // --- AV logo + company info ---
+                    const INFO_BLOCK_W = 110;
+                    const infoLeftX = pageWidth - thinMargin - INFO_BLOCK_W;
+                    if (avLogoB64) {
+                        try {
+                            doc.addImage(avLogoB64, "PNG", infoLeftX, headerY, avLogoW, avLogoH);
+                        } catch { }
+                    }
 
-            //     const rawLines = Array.isArray(data.cell.text) ? data.cell.text : [data.cell.text];
-            //     const lines = rawLines.map(asPlain);
+                    if (infoLines.length) {
+                        doc.setFontSize(8);
+                        doc.setFont("sans", "normal");
 
-            //     const name = (lines[0] ?? "").trim();
-            //     const spec = (lines.slice(1).join(" ") || "").trim();
+                        const startY = headerY + avLogoH + 4;
+                        let cursorY = startY;
 
-            //     // Rebuild as styled, multi-line content (array of arrays)
-            //     data.cell.text = [
-            //         [
-            //             { content: name, styles: { fontStyle: "bold", textColor: [30, 144, 255] } } // sky blue, bold
-            //         ],
-            //         ...(spec
-            //             ? [[{ content: spec, styles: { fontStyle: "normal", textColor: [0, 0, 0] } }]] // black
-            //             : [])
-            //     ] as any; // cast to any to satisfy TS typing
-            // },
+                        infoLines.forEach((line, idx) => {
+                            let y = cursorY + idx * 4;
 
+                            // Detect email
+                            if (line.includes("Email:")) {
+                                const parts = line.split("Email:");
+                                const leftPart = parts[0].trim();
+                                const email = parts[1]?.trim();
 
-            // didDrawPage: (data) => {
-            //     if (brandLogoB64) {
-            //         try { doc.addImage(brandLogoB64, "PNG", thinMargin, headerY, brandLogoW, brandLogoH); } catch { }
-            //     }
-            //     const INFO_BLOCK_W = 100;
-            //     const infoLeftX = pageWidth - thinMargin - INFO_BLOCK_W;
-            //     if (avLogoB64) {
-            //         try { doc.addImage(avLogoB64, "PNG", infoLeftX, headerY, avLogoW, avLogoH); } catch { }
-            //     }
-            //     if (infoLines.length) {
-            //         doc.setFontSize(8);
-            //         doc.setFont("sans", "normal");
-            //         const startY = headerY + avLogoH + 4;
-            //         infoLines.forEach((line, idx) => {
-            //             const y = startY + idx * 3.2;
-            //             doc.text(line || "", infoLeftX, y, { align: "left" });
-            //         });
-            //     }
-            //     doc.setFontSize(9);
-            //     const footerY = pageHeight - thinMargin;
-            //     doc.text(`Page ${data.pageNumber}`, pageWidth - thinMargin, footerY, { align: "right" });
-            // },
+                                // Print left part normally
+                                if (leftPart) {
+                                    doc.setTextColor(0, 0, 0);
+                                    doc.text(leftPart, infoLeftX, y, { align: "left" });
+                                }
 
+                                // Print email in blue + add link
+                                if (email) {
+                                    const emailX = doc.getTextWidth(leftPart + " ") + infoLeftX;
+                                    doc.setTextColor(0, 0, 255);
+                                    doc.text(`Email: ${email}`, emailX, y, { align: "left" });
+                                    doc.link(emailX, y - 3, doc.getTextWidth(email), 6, { url: `mailto:${email}` });
+                                }
+                            }
+                            // Detect website
+                            else if (line.startsWith("Website:")) {
+                                const website = line.replace("Website:", "").trim();
+                                doc.setTextColor(0, 0, 255);
+                                doc.text(`Website: ${website}`, infoLeftX, y, { align: "left" });
+                                doc.link(infoLeftX + doc.getTextWidth("Website: "), y - 3, doc.getTextWidth(website), 6, {
+                                    url: website.startsWith("http") ? website : `https://${website}`,
+                                });
+                            }
+                            // Default (normal black text)
+                            else {
+                                doc.setTextColor(0, 0, 0);
+                                doc.text(line, infoLeftX, y, { align: "left" });
+                            }
+                        });
+                    }
 
-            didDrawPage: (data) => {
-                // --- Brand logo ---
-                if (brandLogoB64) {
-                    try {
-                        doc.addImage(brandLogoB64, "PNG", thinMargin, headerY, brandLogoW, brandLogoH);
-                    } catch { }
-                }
+                    // --- Footer stays as is ---
+                    const footerHeight = 12;
+                    const footerTop = pageHeight - footerHeight;
+                    doc.setFillColor(200, 200, 200);
+                    doc.rect(0, footerTop, pageWidth, footerHeight, "F");
 
-                // --- AV logo + company info ---
-                const INFO_BLOCK_W = 100;
-                const infoLeftX = pageWidth - thinMargin - INFO_BLOCK_W;
-                if (avLogoB64) {
-                    try {
-                        doc.addImage(avLogoB64, "PNG", infoLeftX, headerY, avLogoW, avLogoH);
-                    } catch { }
-                }
-                if (infoLines.length) {
-                    doc.setFontSize(8);
-                    doc.setFont("sans", "normal");
-                    const startY = headerY + avLogoH + 4;
-                    infoLines.forEach((line, idx) => {
-                        const y = startY + idx * 3.2;
-                        doc.text(line || "", infoLeftX, y, { align: "left" });
+                    doc.setFontSize(9);
+                    doc.setFont("helvetica", "bold");
+                    doc.setTextColor(204, 0, 0);
+                    doc.text(
+                        `[Effective ${effectiveStr}. This pricelist supersedes all previous pricelists.]`,
+                        pageWidth / 2,
+                        footerTop + footerHeight / 2 + 2,
+                        { align: "center" }
+                    );
+
+                    doc.setFont("helvetica", "bold");
+                    doc.setTextColor(0, 0, 0);
+                    doc.text(`Page ${data.pageNumber}`, pageWidth - thinMargin, footerTop + footerHeight / 2 + 2, {
+                        align: "right",
                     });
-                }
-
-                // --- Footer area ---
-                const footerHeight = 12;
-                const footerTop = pageHeight - footerHeight; // make sure it's inside the page
-
-                // light grey background strip
-                doc.setFillColor(200, 200, 200);
-                doc.rect(0, footerTop, pageWidth, footerHeight, "F");
-
-                // Effective date disclaimer (center)
-                doc.setFontSize(9);
-                doc.setFont("helvetica", "bold");
-                doc.setTextColor(204, 0, 0);
-                doc.text(
-                    `[Effective ${effectiveStr}. This pricelist supersedes all previous pricelists.]`,
-                    pageWidth / 2,
-                    footerTop + footerHeight / 2 + 2, // vertically centered
-                    { align: "center" }
-                );
-
-                // Page number (right)
-                doc.setFont("helvetica", "bold");
-                doc.setTextColor(0, 0, 0);
-                doc.text(`Page ${data.pageNumber}`, pageWidth - thinMargin, footerTop + footerHeight / 2 + 2, {
-                    align: "right",
-                });
-            },
+                },
 
 
+            // --- Step 1: Split name + spec --- 1st version
+            // didParseCell: (data) => {
+            //     if (data.section === "body" && data.column.index === 2) {
+            //         const raw = String(data.cell.raw || "");
+            //         const [name, ...rest] = raw.split("\n");
+            //         const spec = rest.join(" ").trim();
+            //         // store them separately so we can draw later
+            //         (data.cell as any).customName = name || "";
+            //         (data.cell as any).customSpec = spec || "";
+            //         // prevent default text
+            //         data.cell.text = [""];
+            //     }
+            // },
+
+
+            // --- Step 1: Split name + spec --- 2nd version
             // didParseCell: (data) => {
             //     if (data.section === "body" && data.column.index === 2) {
             //         const raw = String(data.cell.raw || "");
             //         const [name, ...rest] = raw.split("\n");
             //         const spec = rest.join(" ").trim();
 
-            //         // Plain strings only
-            //         data.cell.text = [(name || "").trim(), spec] as any;
+            //         (data.cell as any).customName = name || "";
+            //         (data.cell as any).customSpec = spec || "";
+
+            //         // Estimate height for spec text
+            //         const lineHeight = 5;
+            //         const specHeight = doc.getTextDimensions(spec || "", {
+            //             maxWidth: data.cell.width - 4,
+            //         }).h;
+
+            //         // Increase row height dynamically
+            //         data.cell.height = 10 + specHeight;
+
+            //         // Prevent default autoTable text
+            //         data.cell.text = [""];
             //     }
             // },
 
+
+            // --- Step 1: Split name + spec --- 3rd version (final)
+            didParseCell: (data) => {
+                if (data.section === "body" && data.column.index === 2) {
+                    const raw = String(data.cell.raw || "");
+                    const [name, ...rest] = raw.split("\n");
+                    const spec = rest.join(" ").trim();
+
+                    (data.cell as any).customName = name || "";
+                    (data.cell as any).customSpec = spec || "";
+
+                    // Estimate number of lines spec will take
+                    const maxWidth = data.cell.width - 4;
+                    const specLines = doc.splitTextToSize(spec, maxWidth);
+                    const totalLines = (name ? 1 : 0) + specLines.length;
+
+                    // Force row height based on number of lines
+                    const lineHeight = 5;
+                    data.cell.height = totalLines * lineHeight + 4;
+
+                    // Prevent default text
+                    data.cell.text = [""];
+                }
+            },
+
+
+            // --- Step 2: Render with custom colors --- 1st version
+            // didDrawCell: (cell) => {
+            //     // Images (keep as-is)
+            //     if (cell.section === "body" && cell.column.index === 1) {
+            //         const img = productImages[cell.row.index];
+            //         if (!img) return;
+            //         const cw = cell.cell.width;
+            //         const ch = cell.cell.height;
+            //         const boxW = cw - 2 * IMG_PAD;
+            //         const boxH = IMG_BOX_H;
+            //         const maxDrawableH = Math.max(0, ch - 2 * IMG_PAD);
+            //         const drawH = Math.min(boxH, maxDrawableH);
+            //         const drawW = boxW;
+            //         const x = cell.cell.x + (cw - drawW) / 2;
+            //         const y = cell.cell.y + (ch - drawH) / 2;
+            //         try { doc.addImage(img, "JPEG", x, y, drawW, drawH); }
+            //         catch { try { doc.addImage(img, "PNG", x, y, drawW, drawH); } catch { } }
+            //     }
+
+            //     // Name + Spec styling
+            //     if (cell.section === "body" && cell.column.index === 2) {
+            //         const name = (cell.cell as any).customName || "";
+            //         const spec = (cell.cell as any).customSpec || "";
+            //         const x = cell.cell.x + 2;
+            //         let y = cell.cell.y + 6;
+
+            //         if (name) {
+            //             doc.setFont("helvetica", "bold");
+            //             doc.setFontSize(10);
+            //             doc.setTextColor(30, 144, 255); // sky blue
+            //             doc.text(name, x, y, { baseline: "top" });
+            //         }
+
+            //         if (spec) {
+            //             y += 5;
+            //             doc.setFont("helvetica", "normal");
+            //             doc.setFontSize(7);
+            //             doc.setTextColor(0, 0, 0);
+            //             doc.text(spec, x, y, { baseline: "top" });
+            //         }
+            //     }
+            // }
+
+
+            // --- Step 2: Render with custom colors --- 2nd version 
+            // didDrawCell: (cell) => {
+            //     // --- Image column ---
+            //     if (cell.section === "body" && cell.column.index === 1) {
+            //         const img = productImages[cell.row.index];
+            //         if (!img) return;
+
+            //         const cw = cell.cell.width;
+            //         const ch = cell.cell.height;
+
+            //         const x = cell.cell.x + 2;
+            //         const y = cell.cell.y + 2;
+
+            //         try {
+            //             // Get image dimensions
+            //             const imgProps = doc.getImageProperties(img);
+            //             const ratio = imgProps.width / imgProps.height;
+
+            //             // Fit into box without enlarging
+            //             let drawW = imgProps.width * 0.25; // scale down for safety
+            //             let drawH = drawW / ratio;
+
+            //             if (drawW > cw - 4) {
+            //                 drawW = cw - 4;
+            //                 drawH = drawW / ratio;
+            //             }
+            //             if (drawH > ch - 4) {
+            //                 drawH = ch - 4;
+            //                 drawW = drawH * ratio;
+            //             }
+
+            //             // Center image
+            //             const offsetX = x + (cw - drawW) / 2 - 2;
+            //             const offsetY = y + (ch - drawH) / 2 - 2;
+
+            //             doc.addImage(img, "PNG", offsetX, offsetY, drawW, drawH);
+            //         } catch (e) { }
+            //     }
+
+            //     // --- Name & Spec column ---
+            //     if (cell.section === "body" && cell.column.index === 2) {
+            //         const name = (cell.cell as any).customName || "";
+            //         const spec = (cell.cell as any).customSpec || "";
+            //         const x = cell.cell.x + 2;
+            //         let y = cell.cell.y + 6;
+
+            //         if (name) {
+            //             doc.setFont("helvetica", "bold");
+            //             doc.setFontSize(10);
+            //             doc.setTextColor(30, 144, 255); // sky blue
+            //             doc.text(name, x, y, { maxWidth: cell.cell.width - 4, baseline: "top" });
+            //         }
+
+            //         if (spec) {
+            //             y += 6;
+            //             doc.setFont("helvetica", "normal");
+            //             doc.setFontSize(7);
+            //             doc.setTextColor(0, 0, 0);
+            //             doc.text(spec, x, y, {
+            //                 maxWidth: cell.cell.width - 4,
+            //                 baseline: "top",
+            //             });
+            //         }
+            //     }
+            // }
+
+
+            // --- Step 2: Render with custom colors --- 3rd version (final)
             didDrawCell: (cell) => {
+                // --- Images stay the same ---
                 if (cell.section === "body" && cell.column.index === 1) {
                     const img = productImages[cell.row.index];
                     if (!img) return;
 
-                    const cw = cell.cell.width;
-                    const ch = cell.cell.height;
+                    try {
+                        const props = doc.getImageProperties(img);
+                        const ratio = props.width / props.height;
 
-                    const boxW = cw - 2 * IMG_PAD;
-                    const boxH = IMG_BOX_H;
+                        // fit image inside without enlarging
+                        let drawW = Math.min(props.width, cell.cell.width - 4);
+                        let drawH = drawW / ratio;
 
-                    const maxDrawableH = Math.max(0, ch - 2 * IMG_PAD);
-                    const drawH = Math.min(boxH, maxDrawableH);
-                    const drawW = boxW;
+                        if (drawH > cell.cell.height - 4) {
+                            drawH = cell.cell.height - 4;
+                            drawW = drawH * ratio;
+                        }
 
-                    const x = cell.cell.x + (cw - drawW) / 2;
-                    const y = cell.cell.y + (ch - drawH) / 2;
-
-                    try { doc.addImage(img, "JPEG", x, y, drawW, drawH); }
-                    catch { try { doc.addImage(img, "PNG", x, y, drawW, drawH); } catch { } }
+                        const x = cell.cell.x + (cell.cell.width - drawW) / 2;
+                        const y = cell.cell.y + (cell.cell.height - drawH) / 2;
+                        doc.addImage(img, "PNG", x, y, drawW, drawH);
+                    } catch { }
                 }
-            },
+
+                // --- Custom Name + Spec ---
+                if (cell.section === "body" && cell.column.index === 2) {
+                    const name = (cell.cell as any).customName || "";
+                    const spec = (cell.cell as any).customSpec || "";
+
+                    const x = cell.cell.x + 2;
+                    let y = cell.cell.y + 6;
+
+                    if (name) {
+                        doc.setFont("helvetica", "bold");
+                        doc.setFontSize(10);
+                        doc.setTextColor(30, 144, 255);
+                        doc.text(name, x, y, { maxWidth: cell.cell.width - 4 });
+                        y += 6;
+                    }
+
+                    if (spec) {
+                        doc.setFont("helvetica", "normal");
+                        doc.setFontSize(7);
+                        doc.setTextColor(0, 0, 0);
+                        const wrapped = doc.splitTextToSize(spec, cell.cell.width - 4);
+                        doc.text(wrapped, x, y, { maxWidth: cell.cell.width - 4 });
+                    }
+                }
+            }
         });
+
 
         doc.save("price-list.pdf");
     };
