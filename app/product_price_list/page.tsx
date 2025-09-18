@@ -21,7 +21,9 @@ type ProductRow = {
     status?: "active" | "inactive"
     brandId?: string | { _id?: string; name?: string }
     mainImage?: string
+    categories?: string
     specification?: string
+    isNewProduct?: boolean;
     gstPercent?: number
 }
 
@@ -288,11 +290,24 @@ export default function ProductPriceListPage() {
             })
         );
 
+        // --- preload "New" badge once ---
+        let newBadgeB64: string | null = null;
+        try {
+            const u = process.env.NEXT_PUBLIC_NEW_PRODUCT_BADGE_URL; 
+            // newBadgeB64 = await toB64(u);
+            if (u) {
+                newBadgeB64 = await toB64(u);
+            }
+        } catch { }
+
+
         // ✅ Use formatted string for MRP column
         const rows = activeProducts.map((p, i) => [
             i+1,
             "", // image cell content left empty
-            `${p.name}\n${p.specification || ""}`, // Name + Spec in one cell
+            // `${p.name}\n${p.specification || ""}`, // Name + Spec in one cell
+            // `${p.name}\n${p.category || ""}\n${p.specification || ""}`,
+            `${p.name}\n${(p.categories && p.categories[0]) || ""}\n${p.specification || ""}`, 
             typeof p.gstPercent === "number" ? p.gstPercent : "",
             p.isPOR ? "POR" : formatRs(p.price)
         ]);
@@ -312,163 +327,7 @@ export default function ProductPriceListPage() {
             styles: { halign: "center", fontSize: 10, textColor: [204, 0, 0] }
         }];
 
-        // autoTable(doc, {
-        //     head: [
-        //         titleRow as any,
-        //         subtitleRow as any,
-        //         ["Sr. No.", "Image", "Name & Specification", "GST %", "MRP"]
-        //     ],
-        //     body: rows as any[][],
-        //     margin: { top: headerY + headerBlockH + 2, bottom: footerH + 4, left: thinMargin, right: thinMargin },
-        //     theme: "grid",
-
-        //     headStyles: {
-        //         fillColor: [200, 200, 200],
-        //         textColor: 0,
-        //         fontStyle: "bold",
-        //         halign: "center",
-        //         valign: "middle",
-        //         fontSize: 11,
-        //         cellPadding: 4,
-        //         lineWidth: 0.5,
-        //         lineColor: [0, 0, 0], // black borders
-        //     },
-        //     styles: {
-        //         fontSize: 10,
-        //         cellPadding: 4,
-        //         halign: "left",
-        //         valign: "middle",
-        //         overflow: "linebreak",
-        //         lineWidth: 0.5,
-        //         lineColor: [0, 0, 0], // black borders
-        //     },
-        //     bodyStyles: {
-        //         minCellHeight: MIN_ROW_H,
-        //     },
-        //     rowPageBreak: "avoid",
-
-        //     columnStyles: {
-        //         0: { cellWidth: colWidths[0], halign: "center" }, 
-        //         1: { cellWidth: colWidths[1], halign: "center", valign: "middle" }, // Image                                    // Name (slightly narrower)
-        //         2: { cellWidth: colWidths[2], fontSize: 9 },                         // Name Specification smaller font  ← CHANGED
-        //         3: { cellWidth: colWidths[3], halign: "center" },                    // GST
-        //         4: { cellWidth: colWidths[4], halign: "center" },                    // MRP wider so it won't wrap  ← CHANGED
-        //     },
-
-        //     didDrawPage: (data) => {
-        //         // --- Brand logo ---
-        //         if (brandLogoB64) {
-        //             try {
-        //                 doc.addImage(brandLogoB64, "PNG", thinMargin, headerY, brandLogoW, brandLogoH);
-        //             } catch { }
-        //         }
-
-        //         // --- AV logo + company info ---
-        //         const INFO_BLOCK_W = 110;
-        //         const infoLeftX = pageWidth - thinMargin - INFO_BLOCK_W;
-        //         if (avLogoB64) {
-        //             try {
-        //                 doc.addImage(avLogoB64, "PNG", infoLeftX, headerY, avLogoW, avLogoH);
-        //             } catch { }
-        //         }
-
-        //         if (infoLines.length) {
-        //             doc.setFontSize(8);
-        //             doc.setFont("sans", "normal");
-
-        //             const startY = headerY + avLogoH + 4;
-        //             let cursorY = startY;
-
-        //             infoLines.forEach((line, idx) => {
-        //                 let y = cursorY + idx * 4;
-
-        //                 // Detect email
-        //                 if (line.includes("Email:")) {
-        //                     const parts = line.split("Email:");
-        //                     const leftPart = parts[0].trim();
-        //                     const email = parts[1]?.trim();
-
-        //                     // Print left part normally
-        //                     if (leftPart) {
-        //                         doc.setTextColor(0, 0, 0);
-        //                         doc.text(leftPart, infoLeftX, y, { align: "left" });
-        //                     }
-
-        //                     // Print email in blue + add link
-        //                     if (email) {
-        //                         const emailX = doc.getTextWidth(leftPart + " ") + infoLeftX;
-        //                         doc.setTextColor(0, 0, 255);
-        //                         doc.text(`Email: ${email}`, emailX, y, { align: "left" });
-        //                         doc.link(emailX, y - 3, doc.getTextWidth(email), 6, { url: `mailto:${email}` });
-        //                     }
-        //                 }
-        //                 // Detect website
-        //                 else if (line.startsWith("Website:")) {
-        //                     const website = line.replace("Website:", "").trim();
-        //                     doc.setTextColor(0, 0, 255);
-        //                     doc.text(`Website: ${website}`, infoLeftX, y, { align: "left" });
-        //                     doc.link(infoLeftX + doc.getTextWidth("Website: "), y - 3, doc.getTextWidth(website), 6, {
-        //                         url: website.startsWith("http") ? website : `https://${website}`,
-        //                     });
-        //                 }
-        //                 // Default (normal black text)
-        //                 else {
-        //                     doc.setTextColor(0, 0, 0);
-        //                     doc.text(line, infoLeftX, y, { align: "left" });
-        //                 }
-        //             });
-        //         }
-
-        //         // --- Footer stays as is ---
-        //         const footerHeight = 12;
-        //         const footerTop = pageHeight - footerHeight;
-        //         doc.setFillColor(200, 200, 200);
-        //         doc.rect(0, footerTop, pageWidth, footerHeight, "F");
-
-        //         doc.setFontSize(9);
-        //         doc.setFont("helvetica", "bold");
-        //         doc.setTextColor(204, 0, 0);
-        //         doc.text(
-        //             `[Effective ${effectiveStr}. This pricelist supersedes all previous pricelists.]`,
-        //             pageWidth / 2,
-        //             footerTop + footerHeight / 2 + 2,
-        //             { align: "center" }
-        //         );
-
-        //         doc.setFont("helvetica", "bold");
-        //         doc.setTextColor(0, 0, 0);
-        //         doc.text(`Page ${data.pageNumber}`, pageWidth - thinMargin, footerTop + footerHeight / 2 + 2, {
-        //             align: "right",
-        //         });
-        //     },
-
-
-
-            // //////////////Original image handler//////////////
-            // didDrawCell: (cell) => {
-            //     if (cell.section === "body" && cell.column.index === 1) {
-            //         const img = productImages[cell.row.index];
-            //         if (!img) return;
-
-            //         const cw = cell.cell.width;
-            //         const ch = cell.cell.height;
-
-            //         const boxW = cw - 2 * IMG_PAD;
-            //         const boxH = IMG_BOX_H;
-
-            //         const maxDrawableH = Math.max(0, ch - 2 * IMG_PAD);
-            //         const drawH = Math.min(boxH, maxDrawableH);
-            //         const drawW = boxW;
-
-            //         const x = cell.cell.x + (cw - drawW) / 2;
-            //         const y = cell.cell.y + (ch - drawH) / 2;
-
-            //         try { doc.addImage(img, "JPEG", x, y, drawW, drawH); }
-            //         catch { try { doc.addImage(img, "PNG", x, y, drawW, drawH); } catch { } }
-            //     }
-            // },
-        // });
-
+        
 
 
         autoTable(doc, {
@@ -503,6 +362,7 @@ export default function ProductPriceListPage() {
             },
             bodyStyles: {
                 minCellHeight: MIN_ROW_H,
+
             },
             rowPageBreak: "avoid",
 
@@ -602,60 +462,22 @@ export default function ProductPriceListPage() {
                 },
 
 
-            // --- Step 1: Split name + spec --- 1st version
-            // didParseCell: (data) => {
-            //     if (data.section === "body" && data.column.index === 2) {
-            //         const raw = String(data.cell.raw || "");
-            //         const [name, ...rest] = raw.split("\n");
-            //         const spec = rest.join(" ").trim();
-            //         // store them separately so we can draw later
-            //         (data.cell as any).customName = name || "";
-            //         (data.cell as any).customSpec = spec || "";
-            //         // prevent default text
-            //         data.cell.text = [""];
-            //     }
-            // },
-
-
-            // --- Step 1: Split name + spec --- 2nd version
-            // didParseCell: (data) => {
-            //     if (data.section === "body" && data.column.index === 2) {
-            //         const raw = String(data.cell.raw || "");
-            //         const [name, ...rest] = raw.split("\n");
-            //         const spec = rest.join(" ").trim();
-
-            //         (data.cell as any).customName = name || "";
-            //         (data.cell as any).customSpec = spec || "";
-
-            //         // Estimate height for spec text
-            //         const lineHeight = 5;
-            //         const specHeight = doc.getTextDimensions(spec || "", {
-            //             maxWidth: data.cell.width - 4,
-            //         }).h;
-
-            //         // Increase row height dynamically
-            //         data.cell.height = 10 + specHeight;
-
-            //         // Prevent default autoTable text
-            //         data.cell.text = [""];
-            //     }
-            // },
-
-
             // --- Step 1: Split name + spec --- 3rd version (final)
             didParseCell: (data) => {
                 if (data.section === "body" && data.column.index === 2) {
                     const raw = String(data.cell.raw || "");
-                    const [name, ...rest] = raw.split("\n");
+                    const [name, category, ...rest] = raw.split("\n");
                     const spec = rest.join(" ").trim();
 
                     (data.cell as any).customName = name || "";
+                    (data.cell as any).customCategory = category || "";
                     (data.cell as any).customSpec = spec || "";
 
                     // Estimate number of lines spec will take
                     const maxWidth = data.cell.width - 4;
+                    const catLines = (category ? doc.splitTextToSize(category, maxWidth) : []);
                     const specLines = doc.splitTextToSize(spec, maxWidth);
-                    const totalLines = (name ? 1 : 0) + specLines.length;
+                    const totalLines = (name ? 1 : 0) + catLines.length + specLines.length;
 
                     // Force row height based on number of lines
                     const lineHeight = 5;
@@ -666,122 +488,12 @@ export default function ProductPriceListPage() {
                 }
             },
 
-
-            // --- Step 2: Render with custom colors --- 1st version
-            // didDrawCell: (cell) => {
-            //     // Images (keep as-is)
-            //     if (cell.section === "body" && cell.column.index === 1) {
-            //         const img = productImages[cell.row.index];
-            //         if (!img) return;
-            //         const cw = cell.cell.width;
-            //         const ch = cell.cell.height;
-            //         const boxW = cw - 2 * IMG_PAD;
-            //         const boxH = IMG_BOX_H;
-            //         const maxDrawableH = Math.max(0, ch - 2 * IMG_PAD);
-            //         const drawH = Math.min(boxH, maxDrawableH);
-            //         const drawW = boxW;
-            //         const x = cell.cell.x + (cw - drawW) / 2;
-            //         const y = cell.cell.y + (ch - drawH) / 2;
-            //         try { doc.addImage(img, "JPEG", x, y, drawW, drawH); }
-            //         catch { try { doc.addImage(img, "PNG", x, y, drawW, drawH); } catch { } }
-            //     }
-
-            //     // Name + Spec styling
-            //     if (cell.section === "body" && cell.column.index === 2) {
-            //         const name = (cell.cell as any).customName || "";
-            //         const spec = (cell.cell as any).customSpec || "";
-            //         const x = cell.cell.x + 2;
-            //         let y = cell.cell.y + 6;
-
-            //         if (name) {
-            //             doc.setFont("helvetica", "bold");
-            //             doc.setFontSize(10);
-            //             doc.setTextColor(30, 144, 255); // sky blue
-            //             doc.text(name, x, y, { baseline: "top" });
-            //         }
-
-            //         if (spec) {
-            //             y += 5;
-            //             doc.setFont("helvetica", "normal");
-            //             doc.setFontSize(7);
-            //             doc.setTextColor(0, 0, 0);
-            //             doc.text(spec, x, y, { baseline: "top" });
-            //         }
-            //     }
-            // }
-
-
-            // --- Step 2: Render with custom colors --- 2nd version 
-            // didDrawCell: (cell) => {
-            //     // --- Image column ---
-            //     if (cell.section === "body" && cell.column.index === 1) {
-            //         const img = productImages[cell.row.index];
-            //         if (!img) return;
-
-            //         const cw = cell.cell.width;
-            //         const ch = cell.cell.height;
-
-            //         const x = cell.cell.x + 2;
-            //         const y = cell.cell.y + 2;
-
-            //         try {
-            //             // Get image dimensions
-            //             const imgProps = doc.getImageProperties(img);
-            //             const ratio = imgProps.width / imgProps.height;
-
-            //             // Fit into box without enlarging
-            //             let drawW = imgProps.width * 0.25; // scale down for safety
-            //             let drawH = drawW / ratio;
-
-            //             if (drawW > cw - 4) {
-            //                 drawW = cw - 4;
-            //                 drawH = drawW / ratio;
-            //             }
-            //             if (drawH > ch - 4) {
-            //                 drawH = ch - 4;
-            //                 drawW = drawH * ratio;
-            //             }
-
-            //             // Center image
-            //             const offsetX = x + (cw - drawW) / 2 - 2;
-            //             const offsetY = y + (ch - drawH) / 2 - 2;
-
-            //             doc.addImage(img, "PNG", offsetX, offsetY, drawW, drawH);
-            //         } catch (e) { }
-            //     }
-
-            //     // --- Name & Spec column ---
-            //     if (cell.section === "body" && cell.column.index === 2) {
-            //         const name = (cell.cell as any).customName || "";
-            //         const spec = (cell.cell as any).customSpec || "";
-            //         const x = cell.cell.x + 2;
-            //         let y = cell.cell.y + 6;
-
-            //         if (name) {
-            //             doc.setFont("helvetica", "bold");
-            //             doc.setFontSize(10);
-            //             doc.setTextColor(30, 144, 255); // sky blue
-            //             doc.text(name, x, y, { maxWidth: cell.cell.width - 4, baseline: "top" });
-            //         }
-
-            //         if (spec) {
-            //             y += 6;
-            //             doc.setFont("helvetica", "normal");
-            //             doc.setFontSize(7);
-            //             doc.setTextColor(0, 0, 0);
-            //             doc.text(spec, x, y, {
-            //                 maxWidth: cell.cell.width - 4,
-            //                 baseline: "top",
-            //             });
-            //         }
-            //     }
-            // }
-
-
             // --- Step 2: Render with custom colors --- 3rd version (final)
             didDrawCell: (cell) => {
                 // --- Images stay the same ---
                 if (cell.section === "body" && cell.column.index === 1) {
+
+                    
                     const img = productImages[cell.row.index];
                     if (!img) return;
 
@@ -802,11 +514,24 @@ export default function ProductPriceListPage() {
                         const y = cell.cell.y + (cell.cell.height - drawH) / 2;
                         doc.addImage(img, "PNG", x, y, drawW, drawH);
                     } catch { }
+
+                    const prod = activeProducts[cell.row.index];
+                    if (prod.isNewProduct && newBadgeB64) {
+                        try {
+                            const BADGE_W = 15;
+                            const BADGE_H = 15;
+                            const x = cell.cell.x + 2;   // ⬅️ align left inside the cell
+                            const y = cell.cell.y + 2;   // ⬆️ small margin from top
+                            doc.addImage(newBadgeB64, "JPEG", x, y, BADGE_W, BADGE_H);
+                        } catch { }
+                    }
                 }
+                
 
                 // --- Custom Name + Spec ---
                 if (cell.section === "body" && cell.column.index === 2) {
                     const name = (cell.cell as any).customName || "";
+                    const category = (cell.cell as any).customCategory || "";
                     const spec = (cell.cell as any).customSpec || "";
 
                     const x = cell.cell.x + 2;
@@ -818,6 +543,14 @@ export default function ProductPriceListPage() {
                         doc.setTextColor(30, 144, 255);
                         doc.text(name, x, y, { maxWidth: cell.cell.width - 4 });
                         y += 6;
+                    }
+
+                    if (category) {
+                        doc.setFont("helvetica", "normal");
+                        doc.setFontSize(8);
+                        doc.setTextColor(0, 0, 0);
+                        doc.text(category, x, y, { maxWidth: cell.cell.width - 4 });
+                        y += 5;
                     }
 
                     if (spec) {
@@ -832,7 +565,21 @@ export default function ProductPriceListPage() {
         });
 
 
-        doc.save("price-list.pdf");
+        // doc.save("price-list.pdf");
+
+        // Format effective date as dd-mm-yyyy
+        const safeDate = effectiveDate
+            ? new Date(effectiveDate).toLocaleDateString("en-GB").replace(/\//g, "-")
+            : new Date().toLocaleDateString("en-GB").replace(/\//g, "-");
+
+        // Use brand name or fallback
+        const brandName = brandDetails?.name?.replace(/\s+/g, "_") || "brand";
+
+        // Final filename → brandname_dd-mm-yyyy.pdf
+        const filename = `${brandName}_${safeDate}.pdf`;
+
+        doc.save(filename);
+
     };
 
     const [brands, setBrands] = useState<BrandOpt[]>([])
